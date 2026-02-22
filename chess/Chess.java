@@ -46,7 +46,30 @@ public class Chess {
 			return rp;
 		}
 
-		// Placeholder: move parsing is implemented, but move execution is not yet.
+		ReturnPiece movingPiece = findPieceAt(parsed.from.file, parsed.from.rank);
+		if (movingPiece == null) {
+			rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+			return rp;
+		}
+
+		if (turn == Player.white && !isWhite(movingPiece)) {
+			rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+			return rp;
+		}
+
+		if (turn == Player.black && !isBlack(movingPiece)) {
+			rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+			return rp;
+		}
+
+		ReturnPiece targetPiece = findPieceAt(parsed.to.file, parsed.to.rank);
+		if (sameColor(movingPiece, targetPiece)) {
+			rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+			return rp;
+		}
+
+		// Placeholder: parsing + basic source/turn/destination validation are implemented,
+		// but move execution is not yet.
 		rp.message = null;
 		return rp;
 	}
@@ -56,7 +79,7 @@ public class Chess {
 	 */
 	public static void start() {
 		turn = Player.white; // White always starts first
-		rp = new ReturnPlay(); 
+		rp = new ReturnPlay();
 		rp.message = null;
 		rp.piecesOnBoard = new ArrayList<>();
 
@@ -131,7 +154,7 @@ public class Chess {
 			return invalidMove();
 		}
 
-		move.from = parseSquare(tokens[idx++]);
+		move.from = parseSquare(tokens[idx++]); //if both of these are null then move is invalid
 		move.to = parseSquare(tokens[idx++]);
 		if (move.from == null || move.to == null) {
 			return invalidMove();
@@ -186,4 +209,30 @@ public class Chess {
 		char c = Character.toUpperCase(token.charAt(0));
 		return c == 'Q' || c == 'R' || c == 'B' || c == 'N';
 	}
+
+	private static ReturnPiece findPieceAt(ReturnPiece.PieceFile file, int rank) {
+		for (ReturnPiece p : rp.piecesOnBoard) {
+			if (p.pieceFile == file && p.pieceRank == rank) {
+				return p;
+			}
+		}
+		return null;
+	}
+
+	private static boolean isWhite(ReturnPiece p) { // this is basically going to go to the actual piece passed in and
+													// check its first char to see if it is white or black
+		return p != null && p.pieceType.toString().charAt(0) == 'W';
+	}
+
+	private static boolean isBlack(ReturnPiece p) {
+		return p != null && p.pieceType.toString().charAt(0) == 'B';
+	}
+
+	private static boolean sameColor(ReturnPiece a, ReturnPiece b) {
+		if (a == null || b == null) {
+			return false;
+		}
+		return isWhite(a) == isWhite(b);
+	}
+
 }
