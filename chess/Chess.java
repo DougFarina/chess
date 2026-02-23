@@ -2,6 +2,8 @@ package chess;
 
 import java.util.ArrayList;
 
+import java.lang.Math;
+
 public class Chess {
 
 	enum Player {
@@ -51,7 +53,6 @@ public class Chess {
 			rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return rp;
 		}
-
 		if (turn == Player.white && !isWhite(movingPiece)) {
 			rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return rp;
@@ -70,6 +71,62 @@ public class Chess {
 
 		// Placeholder: parsing + basic source/turn/destination validation are implemented,
 		// but move execution is not yet.
+		// Move Execution: Should be moved to separate methods 
+		switch (pieceType(movingPiece)) {
+			case 'P':
+				if (targetPiece == null) {// Pawn movement with no target piece
+					// If there is no target piece, a pawn can only move to the same file position and only a maximum distance of 2
+					if ((movingPiece.pieceFile != parsed.to.file) || Math.abs(parsed.to.rank - movingPiece.pieceRank) > 2) {
+						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+						return rp;
+					}
+					//Will move pawn two spaces only if it's on its starting rank
+					if (Math.abs(parsed.to.rank - movingPiece.pieceRank) == 2) { //Checks if pawn wants to move 2 spaces
+						if (movingPiece.pieceRank == 2 || movingPiece.pieceRank == 7) {
+							for (ReturnPiece p : rp.piecesOnBoard) {
+								if (movingPiece.equals(p)) {
+									p.pieceFile = parsed.to.file;
+									p.pieceRank = parsed.to.rank;
+								}
+							}
+							rp.message = null;
+							return rp;
+						}
+						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+						return rp;
+					}
+					// will move pawn one space up 
+					if (Math.abs(parsed.to.rank - movingPiece.pieceRank) == 1) { //Checks if pawn wants to move 2 spaces
+						for (ReturnPiece p : rp.piecesOnBoard) {
+							if (movingPiece.equals(p)) {
+								p.pieceFile = parsed.to.file;
+								p.pieceRank = parsed.to.rank;
+							}
+						}
+					}
+				}/*  else {
+					char targetFile = Integer.("" + targetPiece.pieceFile);
+					String movingFile = "" + movingPiece.pieceFile;
+					if (targetPiece.pieceRank == movingPiece.pieceRank + 1 || ((char)targetPiece.pieceFile - (char)movingPiece.pieceFile) == 1) {
+
+					}
+				}*/
+
+				break;
+			case 'R':
+				break;
+			case 'N':
+				break;
+			case 'B':
+				break;
+			case 'Q':
+				break;
+			case 'K':
+				break;
+			default:
+				break;
+		}
+
 		rp.message = null;
 		return rp;
 	}
@@ -87,17 +144,9 @@ public class Chess {
 		for (int i = 0; i < 8; i++) {
 			ReturnPiece.PieceFile file = ReturnPiece.PieceFile.values()[i];
 
-			ReturnPiece whitePawn = new ReturnPiece();
-			whitePawn.pieceType = ReturnPiece.PieceType.WP;
-			whitePawn.pieceFile = file;
-			whitePawn.pieceRank = 2;
-			rp.piecesOnBoard.add(whitePawn);
+			addPiece(ReturnPiece.PieceType.WP, file, 2); // White Pawns
 
-			ReturnPiece blackPawn = new ReturnPiece();
-			blackPawn.pieceType = ReturnPiece.PieceType.BP;
-			blackPawn.pieceFile = file;
-			blackPawn.pieceRank = 7;
-			rp.piecesOnBoard.add(blackPawn);
+			addPiece(ReturnPiece.PieceType.BP, file, 7); // Black Pawns
 		}
 
 		// White back rank (rank 1)
@@ -153,6 +202,7 @@ public class Chess {
 		if (tokens.length < 2) {
 			return invalidMove();
 		}
+
 
 		move.from = parseSquare(tokens[idx++]); //if both of these are null then move is invalid
 		move.to = parseSquare(tokens[idx++]);
@@ -233,6 +283,11 @@ public class Chess {
 			return false;
 		}
 		return isWhite(a) == isWhite(b);
+	}
+
+	private static char pieceType(ReturnPiece p) {
+		String s = "" + p.pieceType;
+		return s.charAt(1);
 	}
 
 }
