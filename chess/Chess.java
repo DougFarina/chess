@@ -2,6 +2,8 @@ package chess;
 
 import java.util.ArrayList;
 
+import chess.ReturnPiece.PieceFile;
+
 import java.lang.Math;
 
 public class Chess {
@@ -93,11 +95,11 @@ public class Chess {
 									p.pieceRank = parsed.to.rank;
 								}
 							}
-							rp.message = null;
+						} else {
+							rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
 							return rp;
 						}
-						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
-						return rp;
+						
 					}
 					// will move pawn one space up
 					if (Math.abs(parsed.to.rank - movingPiece.pieceRank) == 1) { // Checks if pawn wants to move 2
@@ -109,8 +111,8 @@ public class Chess {
 							}
 						}
 					} 
-				} /*
-					 * else {
+				}
+					/* else {
 					 * char targetFile = Integer.("" + targetPiece.pieceFile);
 					 * String movingFile = "" + movingPiece.pieceFile;
 					 * if (targetPiece.pieceRank == movingPiece.pieceRank + 1 ||
@@ -124,7 +126,7 @@ public class Chess {
 			case 'R':
 				boolean sameFile = movingPiece.pieceFile == parsed.to.file; // this is basically just making sure the
 																			// rook is moving horizontal
-				boolean sameRank = movingPiece.pieceRank == parsed.to.rank; // same thign as ^ but for vertical
+				boolean sameRank = movingPiece.pieceRank == parsed.to.rank; // same thing as ^ but for vertical
 
 				if (!sameFile && !sameRank) {
 					rp.message = ReturnPlay.Message.ILLEGAL_MOVE; // if the rook tries to move in a diagonal move it
@@ -145,21 +147,21 @@ public class Chess {
 							return rp;
 						}
 					}
-					} else { //horizontal move check
-						char fromFile = movingPiece.pieceFile.toString().charAt(0);
-						char toFile = parsed.to.file.toString().charAt(0);
-						int step;
-						if (toFile > fromFile) {
-							step = 1;
-						} else {
-							step = -1;
+				} else { //horizontal move check
+					char fromFile = movingPiece.pieceFile.toString().charAt(0);
+					char toFile = parsed.to.file.toString().charAt(0);
+					int step;
+					if (toFile > fromFile) {
+						step = 1;
+					} else {
+						step = -1;
+					}
+					for (char fileChar = (char) (fromFile + step); fileChar != toFile; fileChar += step) {
+						ReturnPiece.PieceFile file = ReturnPiece.PieceFile.valueOf(String.valueOf(fileChar)); //same logic as vertical but I had to make fromFile a char since its an enum unlike rank
+						if (findPieceAt(file, movingPiece.pieceRank) != null) {
+							rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+							return rp;
 						}
-						for (char fileChar = (char) (fromFile + step); fileChar != toFile; fileChar += step) {
-							ReturnPiece.PieceFile file = ReturnPiece.PieceFile.valueOf(String.valueOf(fileChar)); //same logic as vertical but I had to make fromFile a char since its an enum unlike rank
-							if (findPieceAt(file, movingPiece.pieceRank) != null) {
-								rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
-								return rp;
-							}
 					}
 				}
 
@@ -168,7 +170,7 @@ public class Chess {
 					rp.piecesOnBoard.remove(targetPiece); //remove is an ArrayList method and I think it works fine
 				}
 
-				for (ReturnPiece p : rp.piecesOnBoard) { //this actually moves the piece on the boar
+				for (ReturnPiece p : rp.piecesOnBoard) { //this actually moves the piece on the board
 					if (movingPiece.equals(p)) {
 						p.pieceFile = parsed.to.file;
 						p.pieceRank = parsed.to.rank;
@@ -178,6 +180,15 @@ public class Chess {
 			case 'N':
 				break;
 			case 'B':
+				if (targetPiece != null) {
+					if(!isTargetOnDiagonal(movingPiece, targetPiece)) {
+						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+						return rp;
+					}
+
+				} else {
+					System.out.println(isDestinationOnDiagonal(movingPiece, parsed.to));
+				}
 				break;
 			case 'Q':
 				break;
@@ -186,9 +197,39 @@ public class Chess {
 			default:
 				break;
 		}
-
+		//changePlayer();
 		rp.message = null;
 		return rp;
+	}
+
+	private static boolean isTargetOnDiagonal(ReturnPiece movingPiece, ReturnPiece targetPiece) {//Determines if target is on Diagonal, for Bishop and Queen
+		// TODO Auto-generated method stub
+		int rankDistance = Math.abs(movingPiece.pieceRank - targetPiece.pieceRank);
+		int fileDistance = Math.abs(calculatePieceFile(movingPiece.pieceFile) - calculatePieceFile(targetPiece.pieceFile));
+		if(rankDistance == fileDistance) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	private static boolean isDestinationOnDiagonal(ReturnPiece movingPiece, Square destination) { //Determines if destination is on Diagonal, for Bishop and Queen
+		int rankDistance = Math.abs(movingPiece.pieceRank - destination.rank);
+		int fileDistance = Math.abs(calculatePieceFile(movingPiece.pieceFile) - calculatePieceFile(destination.file));
+		if(rankDistance == fileDistance) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	private static void changePlayer() { //Changes Player color
+		// TODO Auto-generated method stub
+		if (turn == Player.white) {
+			turn = Player.black;
+		} else {
+			turn = Player.white;
+			}
 	}
 
 	/**
@@ -347,6 +388,13 @@ public class Chess {
 	private static char pieceType(ReturnPiece p) {
 		String s = "" + p.pieceType;
 		return s.charAt(1);
+	}
+
+	private static int calculatePieceFile(ReturnPiece.PieceFile p) {
+		String s = "" + p;
+		char c = s.charAt(0);
+		int i = Character.getNumericValue(c);
+		return i;
 	}
 
 }
