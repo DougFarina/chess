@@ -123,7 +123,7 @@ public class Chess {
 				 * }
 				 */
 
-				break;
+				break; 
 			case 'R':
 				// Make sure the rook is moving in a straight line (not diagonal).
 				boolean sameFileBishop = movingPiece.pieceFile == parsed.to.file;
@@ -189,9 +189,27 @@ public class Chess {
 						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
 						return rp;
 					}
-
+					rp.piecesOnBoard.remove(targetPiece);
 				} else {
-					System.out.println(isDestinationOnDiagonal(movingPiece, parsed.to));
+					if (!isDestinationOnDiagonal(movingPiece, parsed.to)) {
+						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+						return rp;
+					}
+				}
+				//Check if obstacle in path
+				boolean isSomethingInPath = diagonalCheck(movingPiece, parsed.to.rank);
+
+				if(!(isSomethingInPath)){
+						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+						return rp;
+				}
+				
+
+				for (ReturnPiece p : rp.piecesOnBoard) {
+					if (movingPiece.equals(p)) {
+						p.pieceFile = parsed.to.file;
+						p.pieceRank = parsed.to.rank;
+					}
 				}
 				break;
 			case 'Q':
@@ -199,7 +217,7 @@ public class Chess {
 				boolean sameFileQueen = movingPiece.pieceFile == parsed.to.file;
 				boolean sameRankQueen = movingPiece.pieceRank == parsed.to.rank;
 
-				boolean isMoveDiaganol = isTargetOnDiagonal(movingPiece, targetPiece);
+				boolean isMoveDiagonal = isTargetOnDiagonal(movingPiece, targetPiece);
 
 				break;
 			case 'K':
@@ -216,8 +234,7 @@ public class Chess {
 		// Determines if target is on a diagonal (for bishop and queen).
 		// TODO Auto-generated method stub
 		int rankDistance = Math.abs(movingPiece.pieceRank - targetPiece.pieceRank);
-		int fileDistance = Math
-				.abs(calculatePieceFile(movingPiece.pieceFile) - calculatePieceFile(targetPiece.pieceFile));
+		int fileDistance = Math.abs(calculatePieceFile(movingPiece.pieceFile) - calculatePieceFile(targetPiece.pieceFile));
 		if (rankDistance == fileDistance) {
 			return true;
 		} else {
@@ -441,6 +458,18 @@ public class Chess {
 					return false;
 				}
 			}
+		return true;
+	}
+
+	private static boolean diagonalCheck(ReturnPiece movingPiece, int toRank) {
+		int iterations = toRank - movingPiece.pieceRank;
+		for(int i=1; i < iterations; i++) {
+			for (ReturnPiece p : rp.piecesOnBoard) {
+				if (p.pieceRank == movingPiece.pieceRank + i && calculatePieceFile(p.pieceFile) == calculatePieceFile(movingPiece.pieceFile) + 1) {
+					return false;
+				}
+			}
+		}
 		return true;
 	}
 
