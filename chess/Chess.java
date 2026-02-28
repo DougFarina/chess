@@ -85,42 +85,47 @@ public class Chess {
 		// Move Execution: Should be moved to separate methods
 		switch (pieceType(movingPiece)) {
 			case 'P':
-				int pawnDirection = isWhite(movingPiece) ? 1 : -1;
-				int pawnStartRank = isWhite(movingPiece) ? 2 : 7;
-				int rankDelta = parsed.to.rank - movingPiece.pieceRank;
-				int fileDelta = calculatePieceFile(parsed.to.file) - calculatePieceFile(movingPiece.pieceFile);
-
-				if (targetPiece == null) {
-					if (fileDelta != 0) {
+				if (targetPiece == null) {// Pawn movement with no target piece
+					// If there is no target piece, a pawn can only move to the same file position
+					// and only a maximum distance of 2
+					if ((movingPiece.pieceFile != parsed.to.file)
+							|| Math.abs(parsed.to.rank - movingPiece.pieceRank) > 2) {
 						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
 						return rp;
 					}
-
-					if (rankDelta == pawnDirection) {
-						movePiece(movingPiece, parsed.to.file, parsed.to.rank);
-						handlePawnPromotion(movingPiece, parsed);
-					} else if (rankDelta == 2 * pawnDirection && movingPiece.pieceRank == pawnStartRank) {
-						int intermediateRank = movingPiece.pieceRank + pawnDirection;
-						if (findPieceAt(movingPiece.pieceFile, intermediateRank) != null) {
+					// Will move pawn two spaces only if it's on its starting rank
+					if (Math.abs(parsed.to.rank - movingPiece.pieceRank) == 2) { // Checks if pawn wants to move 2
+																					// spaces
+						if (movingPiece.pieceRank == 2 || movingPiece.pieceRank == 7) { // Checks if pawn is on starting
+																						// rank
+							movePiece(movingPiece, parsed.to.file, parsed.to.rank); // Move the pawn
+							handlePawnPromotion(movingPiece, parsed); // Handle promotion if it reaches the end of the
+																		// board
+						} else {
 							rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
 							return rp;
 						}
+
+					}
+					// will move pawn one space up
+					if (Math.abs(parsed.to.rank - movingPiece.pieceRank) == 1) { // Checks if pawn wants to move 2
+																					// spaces
 						movePiece(movingPiece, parsed.to.file, parsed.to.rank);
 						handlePawnPromotion(movingPiece, parsed);
-					} else {
-						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
-						return rp;
 					}
-				} else {
-					if (Math.abs(fileDelta) != 1 || rankDelta != pawnDirection) {
-						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
-						return rp;
-					}
-					rp.piecesOnBoard.remove(targetPiece);
-					movePiece(movingPiece, parsed.to.file, parsed.to.rank);
-					handlePawnPromotion(movingPiece, parsed);
 				}
-				break; 
+				/*
+				 * else {
+				 * char targetFile = Integer.("" + targetPiece.pieceFile);
+				 * String movingFile = "" + movingPiece.pieceFile;
+				 * if (targetPiece.pieceRank == movingPiece.pieceRank + 1 ||
+				 * ((char)targetPiece.pieceFile - (char)movingPiece.pieceFile) == 1) {
+				 *
+				 * }
+				 * }
+				 */
+
+				break;
 			case 'R':
 				// Make sure the rook is moving in a straight line (not diagonal).
 				boolean sameFileBishop = movingPiece.pieceFile == parsed.to.file;
@@ -154,9 +159,10 @@ public class Chess {
 				break;
 			case 'N':
 				// Knights can jump over pieces so no path check is needed.
-				int fileDistance = Math.abs(calculatePieceFile(movingPiece.pieceFile) - calculatePieceFile(parsed.to.file));
+				int fileDistance = Math
+						.abs(calculatePieceFile(movingPiece.pieceFile) - calculatePieceFile(parsed.to.file));
 				int rankDistance = Math.abs(movingPiece.pieceRank - parsed.to.rank);
-				// Knight has to  move in an L-shape: (2,1) or (1,2).
+				// Knight has to move in an L-shape: (2,1) or (1,2).
 				if (!((fileDistance == 2 && rankDistance == 1) || (fileDistance == 1 && rankDistance == 2))) {
 					rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
 					return rp;
@@ -181,14 +187,13 @@ public class Chess {
 						return rp;
 					}
 				}
-				//Check if obstacle in path
+				// Check if obstacle in path
 				boolean isSomethingInPath = diagonalCheck(movingPiece, parsed.to.rank);
 
-				if(!(isSomethingInPath)){
-						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
-						return rp;
+				if (!(isSomethingInPath)) {
+					rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+					return rp;
 				}
-				
 
 				movePiece(movingPiece, parsed.to.file, parsed.to.rank);
 				break;
@@ -196,7 +201,7 @@ public class Chess {
 				boolean sameFileQueen = movingPiece.pieceFile == parsed.to.file;
 				boolean sameRankQueen = movingPiece.pieceRank == parsed.to.rank;
 
-				if (sameFileQueen || sameRankQueen) { 
+				if (sameFileQueen || sameRankQueen) {
 					if (sameFileQueen) {
 						if (!verticalCheck(sameFileQueen, movingPiece, parsed)) {
 							rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
@@ -237,16 +242,19 @@ public class Chess {
 
 				break;
 			case 'K':
-				int kingFileDistance = Math.abs(calculatePieceFile(movingPiece.pieceFile) - calculatePieceFile(parsed.to.file));
+				int kingFileDistance = Math
+						.abs(calculatePieceFile(movingPiece.pieceFile) - calculatePieceFile(parsed.to.file));
 				int kingRankDistance = Math.abs(movingPiece.pieceRank - parsed.to.rank);
 
-				if (kingRankDistance == 0 && kingFileDistance == 2) { // This is a castling move (king moves two spaces horizontally)
+				if (kingRankDistance == 0 && kingFileDistance == 2) { // This is a castling move (king moves two spaces
+																		// horizontally)
 					if (!castleKing(movingPiece, parsed)) { // Try to castle, if it fails then it's an illegal move
 						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
 						return rp;
 					}
 				} else {
-					if (kingFileDistance > 1 || kingRankDistance > 1 || (kingFileDistance == 0 && kingRankDistance == 0)) { //only move space in any direction. 
+					if (kingFileDistance > 1 || kingRankDistance > 1
+							|| (kingFileDistance == 0 && kingRankDistance == 0)) { // only move space in any direction.
 						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
 						return rp;
 					}
@@ -261,7 +269,7 @@ public class Chess {
 			default:
 				break;
 		}
-		changePlayer();
+		// changePlayer();
 		rp.message = null;
 		return rp;
 	}
@@ -270,7 +278,8 @@ public class Chess {
 		// Determines if target is on a diagonal (for bishop and queen).
 		// TODO Auto-generated method stub
 		int rankDistance = Math.abs(movingPiece.pieceRank - targetPiece.pieceRank);
-		int fileDistance = Math.abs(calculatePieceFile(movingPiece.pieceFile) - calculatePieceFile(targetPiece.pieceFile));
+		int fileDistance = Math
+				.abs(calculatePieceFile(movingPiece.pieceFile) - calculatePieceFile(targetPiece.pieceFile));
 		if (rankDistance == fileDistance) {
 			return true;
 		} else {
@@ -471,16 +480,16 @@ public class Chess {
 
 	private static boolean verticalCheck(boolean sameFile, ReturnPiece movingPiece, Move parsed) {
 		int step;
-					if (parsed.to.rank > movingPiece.pieceRank) {
-						step = 1;
-					} else {
-						step = -1;
-					} // This will stop before the target square.
-					for (int rank = movingPiece.pieceRank + step; rank != parsed.to.rank; rank += step) {
-							if (findPieceAt(movingPiece.pieceFile, rank) != null) {
-								return false;
-							}
-						}
+		if (parsed.to.rank > movingPiece.pieceRank) {
+			step = 1;
+		} else {
+			step = -1;
+		} // This will stop before the target square.
+		for (int rank = movingPiece.pieceRank + step; rank != parsed.to.rank; rank += step) {
+			if (findPieceAt(movingPiece.pieceFile, rank) != null) {
+				return false;
+			}
+		}
 		return true;
 	}
 
@@ -496,18 +505,19 @@ public class Chess {
 		for (int fileNum = fromFile + step; fileNum != toFile; fileNum += step) {
 			// Convert the file number back to a file enum (a-h are 10-17 here).
 			ReturnPiece.PieceFile file = ReturnPiece.PieceFile.values()[fileNum - 10];
-				if (findPieceAt(file, movingPiece.pieceRank) != null) {
-					return false;
-				}
+			if (findPieceAt(file, movingPiece.pieceRank) != null) {
+				return false;
 			}
+		}
 		return true;
 	}
 
 	private static boolean diagonalCheck(ReturnPiece movingPiece, int toRank) {
 		int iterations = toRank - movingPiece.pieceRank;
-		for(int i=1; i < iterations; i++) {
+		for (int i = 1; i < iterations; i++) {
 			for (ReturnPiece p : rp.piecesOnBoard) {
-				if (p.pieceRank == movingPiece.pieceRank + i && calculatePieceFile(p.pieceFile) == calculatePieceFile(movingPiece.pieceFile) + 1) {
+				if (p.pieceRank == movingPiece.pieceRank + i
+						&& calculatePieceFile(p.pieceFile) == calculatePieceFile(movingPiece.pieceFile) + 1) {
 					return false;
 				}
 			}
@@ -515,7 +525,7 @@ public class Chess {
 		return true;
 	}
 
-	private static void handlePawnPromotion(ReturnPiece pawn, Move parsed) { 
+	private static void handlePawnPromotion(ReturnPiece pawn, Move parsed) {
 		if (pawn == null) {
 			return;
 		}
@@ -525,16 +535,18 @@ public class Chess {
 		}
 
 		if (isWhite(pawn)) {
-			if (pawn.pieceRank != 8) { // If the pawn is white it can only be promoted if it reaches rank 8. If not, it's an illegal move
+			if (pawn.pieceRank != 8) { // If the pawn is white it can only be promoted if it reaches rank 8. If not,
+										// it's an illegal move
 				return;
 			}
-		} else { // If the pawn is black it can only be promoted if it reaches rank 1. If not, it's an illegal mov
+		} else { // If the pawn is black it can only be promoted if it reaches rank 1. If not,
+					// it's an illegal mov
 			if (pawn.pieceRank != 1) {
 				return;
 			}
 		}
 
-		char promotionPiece; 
+		char promotionPiece;
 		if (parsed.promotion == null) {
 			promotionPiece = 'Q';
 		} else {
@@ -564,28 +576,43 @@ public class Chess {
 		}
 	}
 
-	private static void movePiece(ReturnPiece piece, ReturnPiece.PieceFile toFile, int toRank) { // This method assumes the move is legal and just executes it. The logic is the same as way I just put it in a method.
+	private static void movePiece(ReturnPiece piece, ReturnPiece.PieceFile toFile, int toRank) { // This method assumes
+																									// the move is legal
+																									// and just executes
+																									// it. The logic is
+																									// the same as way I
+																									// just put it in a
+																									// method.
 		markPieceAsMoved(piece);
 		piece.pieceFile = toFile;
 		piece.pieceRank = toRank;
 	}
 
-	private static boolean castleKing(ReturnPiece king, Move parsed) { // This method assumes that the move is a castling move and tries to execute it
-		if (hasKingMoved(king) || findPieceAt(parsed.to.file, parsed.to.rank) != null) { //rejects if king moved or piece in destination
+	private static boolean castleKing(ReturnPiece king, Move parsed) { // This method assumes that the move is a
+																		// castling move and tries to execute it
+		if (hasKingMoved(king) || findPieceAt(parsed.to.file, parsed.to.rank) != null) { // rejects if king moved or
+																							// piece in destination
 			return false;
 		}
 
 		int rank = king.pieceRank; // rank ahs to be the same for king and rook
-		boolean kingside = calculatePieceFile(parsed.to.file) > calculatePieceFile(king.pieceFile); // if the destination file is greater than the king's file, it's a kingside castle. True if kingside, false if queenside
+		boolean kingside = calculatePieceFile(parsed.to.file) > calculatePieceFile(king.pieceFile); // if the
+																									// destination file
+																									// is greater than
+																									// the king's file,
+																									// it's a kingside
+																									// castle. True if
+																									// kingside, false
+																									// if queenside
 		ReturnPiece.PieceFile rookFile;
-		if (kingside) { //kingside castle rook is on h file, queenside rook on a
+		if (kingside) { // kingside castle rook is on h file, queenside rook on a
 			rookFile = ReturnPiece.PieceFile.h;
 		} else {
 			rookFile = ReturnPiece.PieceFile.a;
 		}
 		ReturnPiece rook = findPieceAt(rookFile, rank);
 
-		if (rook == null || pieceType(rook) != 'R' || sameColor(king, rook) == false || hasRookMoved(rook)) { 
+		if (rook == null || pieceType(rook) != 'R' || sameColor(king, rook) == false || hasRookMoved(rook)) {
 			return false;
 		}
 
@@ -593,7 +620,7 @@ public class Chess {
 			return false;
 		}
 
-		Player defendingPlayer; 
+		Player defendingPlayer;
 		if (isWhite(king)) {
 			defendingPlayer = Player.white;
 		} else {
@@ -619,7 +646,10 @@ public class Chess {
 		return true;
 	}
 
-	private static void markPieceAsMoved(ReturnPiece piece) { // This method marks the piece as having moved, which is relevant for castling rights. It also marks the specific rook as having moved if a rook moves which is also relevant for castling 
+	private static void markPieceAsMoved(ReturnPiece piece) { // This method marks the piece as having moved, which is
+																// relevant for castling rights. It also marks the
+																// specific rook as having moved if a rook moves which
+																// is also relevant for castling
 		if (piece == null) {
 			return;
 		}
@@ -631,7 +661,7 @@ public class Chess {
 			case BK:
 				blackKingMoved = true;
 				break;
-			case WR:  
+			case WR:
 				if (piece.pieceRank == 1) {
 					if (piece.pieceFile == ReturnPiece.PieceFile.a) {
 						whiteQueensideRookMoved = true;
@@ -654,7 +684,7 @@ public class Chess {
 		}
 	}
 
-	private static boolean hasKingMoved(ReturnPiece king) { 
+	private static boolean hasKingMoved(ReturnPiece king) {
 		if (king.pieceType == ReturnPiece.PieceType.WK) {
 			return whiteKingMoved;
 		}
@@ -684,7 +714,8 @@ public class Chess {
 		return true;
 	}
 
-	private static boolean isSquareUnderAttack(ReturnPiece.PieceFile targetFile, int targetRank, Player defendingPlayer) { 
+	private static boolean isSquareUnderAttack(ReturnPiece.PieceFile targetFile, int targetRank,
+			Player defendingPlayer) {
 		for (ReturnPiece piece : rp.piecesOnBoard) {
 			if ((defendingPlayer == Player.white && isBlack(piece))
 					|| (defendingPlayer == Player.black && isWhite(piece))) {
@@ -733,7 +764,8 @@ public class Chess {
 		}
 	}
 
-	private static boolean isPathClear(ReturnPiece.PieceFile fromFile, int fromRank, ReturnPiece.PieceFile toFile, int toRank) {
+	private static boolean isPathClear(ReturnPiece.PieceFile fromFile, int fromRank, ReturnPiece.PieceFile toFile,
+			int toRank) {
 		int fromFileValue = calculatePieceFile(fromFile);
 		int toFileValue = calculatePieceFile(toFile);
 		int fileDiff = toFileValue - fromFileValue;
