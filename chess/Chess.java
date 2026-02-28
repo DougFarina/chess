@@ -85,44 +85,41 @@ public class Chess {
 		// Move Execution: Should be moved to separate methods
 		switch (pieceType(movingPiece)) {
 			case 'P':
-				if (targetPiece == null) {// Pawn movement with no target piece
-					// If there is no target piece, a pawn can only move to the same file position
-					// and only a maximum distance of 2
-					if ((movingPiece.pieceFile != parsed.to.file)
-							|| Math.abs(parsed.to.rank - movingPiece.pieceRank) > 2) {
+				int pawnDirection = isWhite(movingPiece) ? 1 : -1;
+				int pawnStartRank = isWhite(movingPiece) ? 2 : 7;
+				int rankDelta = parsed.to.rank - movingPiece.pieceRank;
+				int fileDelta = calculatePieceFile(parsed.to.file) - calculatePieceFile(movingPiece.pieceFile);
+
+				if (targetPiece == null) {
+					if (fileDelta != 0) {
 						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
 						return rp;
 					}
-					// Will move pawn two spaces only if it's on its starting rank
-					if (Math.abs(parsed.to.rank - movingPiece.pieceRank) == 2) { // Checks if pawn wants to move 2
-																					// spaces
-						if (movingPiece.pieceRank == 2 || movingPiece.pieceRank == 7) { // Checks if pawn is on starting rank
-							movePiece(movingPiece, parsed.to.file, parsed.to.rank); // Move the pawn
-							handlePawnPromotion(movingPiece, parsed); // Handle promotion if it reaches the end of the board
-						} else {
+
+					if (rankDelta == pawnDirection) {
+						movePiece(movingPiece, parsed.to.file, parsed.to.rank);
+						handlePawnPromotion(movingPiece, parsed);
+					} else if (rankDelta == 2 * pawnDirection && movingPiece.pieceRank == pawnStartRank) {
+						int intermediateRank = movingPiece.pieceRank + pawnDirection;
+						if (findPieceAt(movingPiece.pieceFile, intermediateRank) != null) {
 							rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
 							return rp;
 						}
-
-					}
-					// will move pawn one space up
-					if (Math.abs(parsed.to.rank - movingPiece.pieceRank) == 1) { // Checks if pawn wants to move 2
-																					// spaces
 						movePiece(movingPiece, parsed.to.file, parsed.to.rank);
 						handlePawnPromotion(movingPiece, parsed);
+					} else {
+						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+						return rp;
 					}
+				} else {
+					if (Math.abs(fileDelta) != 1 || rankDelta != pawnDirection) {
+						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
+						return rp;
+					}
+					rp.piecesOnBoard.remove(targetPiece);
+					movePiece(movingPiece, parsed.to.file, parsed.to.rank);
+					handlePawnPromotion(movingPiece, parsed);
 				}
-				/*
-				 * else {
-				 * char targetFile = Integer.("" + targetPiece.pieceFile);
-				 * String movingFile = "" + movingPiece.pieceFile;
-				 * if (targetPiece.pieceRank == movingPiece.pieceRank + 1 ||
-				 * ((char)targetPiece.pieceFile - (char)movingPiece.pieceFile) == 1) {
-				 * 
-				 * }
-				 * }
-				 */
-
 				break; 
 			case 'R':
 				// Make sure the rook is moving in a straight line (not diagonal).
@@ -185,8 +182,7 @@ public class Chess {
 					}
 				}
 				//Check if obstacle in path
-				boolean isSomethingInPath = diagonalCheck(movingPiece, parsed.to);
-				System.out.println(isSomethingInPath);
+				boolean isSomethingInPath = diagonalCheck(movingPiece, parsed.to.rank);
 
 				if(!(isSomethingInPath)){
 						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
@@ -265,7 +261,7 @@ public class Chess {
 			default:
 				break;
 		}
-		//changePlayer();
+		changePlayer();
 		rp.message = null;
 		return rp;
 	}
@@ -475,16 +471,16 @@ public class Chess {
 
 	private static boolean verticalCheck(boolean sameFile, ReturnPiece movingPiece, Move parsed) {
 		int step;
-		if (parsed.to.rank > movingPiece.pieceRank) {
-			step = 1;
-		} else {
-			step = -1;
-		} // This will stop before the target square.
-		for (int rank = movingPiece.pieceRank + step; rank != parsed.to.rank; rank += step) {
-			if (findPieceAt(movingPiece.pieceFile, rank) != null) {
-				return false;
-			}
-		}
+					if (parsed.to.rank > movingPiece.pieceRank) {
+						step = 1;
+					} else {
+						step = -1;
+					} // This will stop before the target square.
+					for (int rank = movingPiece.pieceRank + step; rank != parsed.to.rank; rank += step) {
+							if (findPieceAt(movingPiece.pieceFile, rank) != null) {
+								return false;
+							}
+						}
 		return true;
 	}
 
@@ -507,25 +503,11 @@ public class Chess {
 		return true;
 	}
 
-	private static boolean diagonalCheck(ReturnPiece movingPiece, Square destination) {
-		int horizontalStep, verticalStep;
-		if (destination.rank > movingPiece.pieceRank) {
-			verticalStep = 1;
-		} else {
-			verticalStep = -1;
-		}
-		if (calculatePieceFile(destination.file) > calculatePieceFile(movingPiece.pieceFile)) {
-			horizontalStep = 1;
-		} else {
-			horizontalStep = -1;
-		}
-
-		int iterations = Math.abs(destination.rank - movingPiece.pieceRank);
-		for(int i = 1; i < iterations; i++) {
-			int checkFile = calculatePieceFile(movingPiece.pieceFile) + horizontalStep*i;
-			int checkRank = movingPiece.pieceRank + verticalStep*i;
-			for(ReturnPiece p: rp.piecesOnBoard) {
-				if(calculatePieceFile(p.pieceFile)==checkFile && p.pieceRank==checkRank) {
+	private static boolean diagonalCheck(ReturnPiece movingPiece, int toRank) {
+		int iterations = toRank - movingPiece.pieceRank;
+		for(int i=1; i < iterations; i++) {
+			for (ReturnPiece p : rp.piecesOnBoard) {
+				if (p.pieceRank == movingPiece.pieceRank + i && calculatePieceFile(p.pieceFile) == calculatePieceFile(movingPiece.pieceFile) + 1) {
 					return false;
 				}
 			}
