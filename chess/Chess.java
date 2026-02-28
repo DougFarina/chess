@@ -197,7 +197,8 @@ public class Chess {
 					}
 				}
 				//Check if obstacle in path
-				boolean isSomethingInPath = diagonalCheck(movingPiece, parsed.to.rank);
+				boolean isSomethingInPath = diagonalCheck(movingPiece, parsed.to);
+				System.out.println(isSomethingInPath);
 
 				if(!(isSomethingInPath)){
 						rp.message = ReturnPlay.Message.ILLEGAL_MOVE;
@@ -429,16 +430,16 @@ public class Chess {
 
 	private static boolean verticalCheck(boolean sameFile, ReturnPiece movingPiece, Move parsed) {
 		int step;
-					if (parsed.to.rank > movingPiece.pieceRank) {
-						step = 1;
-					} else {
-						step = -1;
-					} // This will stop before the target square.
-					for (int rank = movingPiece.pieceRank + step; rank != parsed.to.rank; rank += step) {
-							if (findPieceAt(movingPiece.pieceFile, rank) != null) {
-								return false;
-							}
-						}
+		if (parsed.to.rank > movingPiece.pieceRank) {
+			step = 1;
+		} else {
+			step = -1;
+		} // This will stop before the target square.
+		for (int rank = movingPiece.pieceRank + step; rank != parsed.to.rank; rank += step) {
+			if (findPieceAt(movingPiece.pieceFile, rank) != null) {
+				return false;
+			}
+		}
 		return true;
 	}
 
@@ -461,11 +462,25 @@ public class Chess {
 		return true;
 	}
 
-	private static boolean diagonalCheck(ReturnPiece movingPiece, int toRank) {
-		int iterations = toRank - movingPiece.pieceRank;
-		for(int i=1; i < iterations; i++) {
-			for (ReturnPiece p : rp.piecesOnBoard) {
-				if (p.pieceRank == movingPiece.pieceRank + i && calculatePieceFile(p.pieceFile) == calculatePieceFile(movingPiece.pieceFile) + 1) {
+	private static boolean diagonalCheck(ReturnPiece movingPiece, Square destination) {
+		int horizontalStep, verticalStep;
+		if (destination.rank > movingPiece.pieceRank) {
+			verticalStep = 1;
+		} else {
+			verticalStep = -1;
+		}
+		if (calculatePieceFile(destination.file) > calculatePieceFile(movingPiece.pieceFile)) {
+			horizontalStep = 1;
+		} else {
+			horizontalStep = -1;
+		}
+
+		int iterations = Math.abs(destination.rank - movingPiece.pieceRank);
+		for(int i = 1; i < iterations; i++) {
+			int checkFile = calculatePieceFile(movingPiece.pieceFile) + horizontalStep*i;
+			int checkRank = movingPiece.pieceRank + verticalStep*i;
+			for(ReturnPiece p: rp.piecesOnBoard) {
+				if(calculatePieceFile(p.pieceFile)==checkFile && p.pieceRank==checkRank) {
 					return false;
 				}
 			}
